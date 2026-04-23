@@ -1,0 +1,15 @@
+{
+  "name": "wordwich-frontend",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "npx @tailwindcss/cli -i ./input.css -o ./output.css --minify",
+    "dev": "npx @tailwindcss/cli -i ./input.css -o ./output.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.2.4",
+    "tailwindcss": "^4.2.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

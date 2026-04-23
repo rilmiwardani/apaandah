@@ -1,0 +1,1281 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HAH APAAN??</title>
+    <meta name="description" content="Game tebak kata seru untuk TikTok Live - Cari kata rahasianya!" />
+    <!-- PRODUCTION NOTE: Ganti CDN ini dengan Tailwind CLI build untuk performa optimal -->
+    <link rel="stylesheet" href="./output.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+    <style>
+      body {
+        background-color: #040d14;
+        color: #fff;
+        overflow: hidden;
+      }
+
+      /* Hide Scrollbar */
+      ::-webkit-scrollbar {
+        display: none;
+      }
+      * {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      /* Selection */
+      ::selection {
+        background: rgba(74, 222, 128, 0.3);
+      }
+
+      /* Smooth list transitions */
+      .list-enter {
+        animation: fade-in 0.3s ease-out forwards;
+      }
+      @keyframes fade-in {
+        from {
+          opacity: 0;
+          transform: translateY(5px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Modal & Player Glow */
+      .modal-glow {
+        box-shadow:
+          0 0 50px rgba(74, 222, 128, 0.15),
+          0 25px 50px -12px rgba(0, 0, 0, 0.8);
+      }
+
+      /* Spin Animation for Vinyl */
+      @keyframes spin-slow {
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .animate-spin-slow {
+        animation: spin-slow 4s linear infinite;
+      }
+    </style>
+  </head>
+  <body class="h-screen w-screen flex items-center justify-center font-sans antialiased">
+
+
+    <!-- Main Game Container (Mobile/Chat format) -->
+    <main class="w-full max-w-lg h-full md:h-[90vh] flex flex-col relative bg-stream-bg md:border md:border-gray-800 md:rounded-xl overflow-hidden shadow-2xl">
+      <!-- Header -->
+      <header class="p-4 border-b border-gray-800 bg-stream-bg z-10 flex justify-between items-center shrink-0">
+        <div>
+          <h1 onclick="toggleFullScreen()" class="text-xl font-bold tracking-tight text-white cursor-pointer hover:text-gray-300 transition-colors" title="Klik untuk Fullscreen">
+            HAH APAAN<span id="ws-status-indicator" class="text-yellow-400 transition-colors duration-300">??</span>
+          </h1>
+          <p class="text-xs text-gray-400">Cari kata rahasianya!</p>
+        </div>
+        <div class="text-xs font-semibold text-gray-500 bg-gray-900 px-3 py-1.5 rounded-md">Tebakan: <span id="guess-count" class="text-white">0</span></div>
+      </header>
+
+      <!-- Last Winner Banner -->
+      <div
+        id="last-winner-banner"
+        class="hidden px-4 py-2.5 border-b border-gray-800/80 bg-gradient-to-r from-[#0a1118] to-stream-bg flex items-center justify-between shrink-0 text-[11px] sm:text-xs z-10 shadow-sm">
+        <div class="flex items-center gap-2.5">
+          <span
+            class="text-yellow-400 font-bold tracking-widest uppercase text-[9px] bg-yellow-500/10 border border-yellow-500/20 px-2 py-0.5 rounded shadow-[0_0_8px_rgba(250,204,21,0.15)] hidden sm:inline-block"
+            >LAST WINNER</span
+          >
+          <span class="text-yellow-400 font-bold tracking-widest uppercase text-[9px] bg-yellow-500/10 border border-yellow-500/20 px-2 py-0.5 rounded shadow-[0_0_8px_rgba(250,204,21,0.15)] sm:hidden"
+            >WINNER</span
+          >
+
+          <div id="last-winner-avatar" class="w-5 h-5 rounded-full overflow-hidden border border-gray-600 flex items-center justify-center bg-[#2563eb] shrink-0"></div>
+          <span id="last-winner-name" class="text-white font-bold max-w-[80px] sm:max-w-[120px] truncate">Name</span>
+        </div>
+        <div class="flex items-center gap-2 bg-black/40 px-2.5 py-1 rounded border border-white/5 shadow-inner">
+          <span class="text-gray-500 font-bold uppercase text-[9px] tracking-wider hidden sm:inline">LAST WORD</span>
+          <span id="last-secret-word" class="font-bold text-stream-green uppercase tracking-widest drop-shadow-[0_0_5px_rgba(74,222,128,0.3)]">WORD</span>
+        </div>
+      </div>
+
+      <!-- Chat / Guess List -->
+      <div id="guess-list" class="flex-1 overflow-y-auto p-3 flex flex-col justify-center gap-[3px] scroll-smooth pb-[30vh] cursor-text relative">
+        <!-- Permanent Input Box -->
+        <form id="secret-divider" class="my-1 w-full shrink-0 relative z-20 hidden" style="order: 2">
+          <input
+            type="text"
+            id="dynamic-guess-input"
+            autocomplete="off"
+            inputmode="none"
+            placeholder="Ketik kata pertama untuk memulai..."
+            class="w-full bg-[#02060a] rounded-md p-3 text-sm text-center text-white placeholder-gray-500 font-medium outline-none focus:bg-[#07121c] transition-all duration-300 caret-white border border-transparent focus:border-stream-green/40 focus:shadow-[0_0_15px_rgba(74,222,128,0.15)]" />
+        </form>
+
+        <div class="flex items-center justify-center flex-col gap-3 text-center text-gray-500" id="empty-state" style="order: 3">
+          <svg class="w-12 h-12 opacity-50 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="loading-icon">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          <p class="text-sm" id="empty-state-text">Memuat kamus...<br />Mohon tunggu sebentar.</p>
+        </div>
+      </div>
+
+      <!-- Floating Error Toast (Sekarang juga digunakan untuk error Youtube) -->
+      <div
+        id="error-toast"
+        class="absolute bottom-6 left-1/2 -translate-x-1/2 bg-red-500/90 text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow-lg hidden opacity-0 transition-opacity duration-300 z-50 pointer-events-none text-center max-w-[90%]">
+        Kata tidak valid!
+      </div>
+    </main>
+
+    <!-- UI Overlay Section -->
+    <div class="fixed inset-0 pointer-events-none z-[100] w-full h-full overflow-hidden">
+      <!-- Rank Toast Notification Container -->
+      <div id="rank-toast-container" class="absolute bottom-[280px] right-4 sm:right-6 flex flex-col items-end"></div>
+
+      <!-- Aesthetic Music Player Overlay (Minimalist & Collapsible Queue) -->
+      <div
+        id="music-player-overlay"
+        class="absolute bottom-20 right-4 sm:right-6 w-72 bg-[#0a1118]/85 backdrop-blur-xl border border-gray-700/50 rounded-xl shadow-[0_10px_30px_rgb(0,0,0,0.8)] flex flex-col overflow-hidden transform translate-y-[150%] opacity-0 transition-all duration-500 pointer-events-auto">
+        <!-- Player Main Info -->
+        <div class="flex items-center p-3 gap-3">
+          <!-- Vinyl Record Thumbnail -->
+          <div class="relative w-12 h-12 rounded-full overflow-hidden border-[2px] border-[#1e293b] shrink-0 shadow-[0_0_10px_rgba(0,0,0,0.6)]" id="player-thumb-container">
+            <img id="player-thumbnail" src="" class="w-full h-full object-cover" alt="thumbnail" />
+            <div class="absolute inset-0 m-auto w-2.5 h-2.5 bg-[#0a1118] rounded-full border border-gray-600"></div>
+          </div>
+
+          <!-- Song Info & Controls -->
+          <div class="flex-1 min-w-0 flex flex-col justify-center">
+            <div class="text-[8px] font-bold text-stream-green tracking-[0.15em] uppercase mb-0.5 flex items-center gap-1 drop-shadow-[0_0_3px_rgba(74,222,128,0.5)]">
+              <span id="player-status-dot" class="w-1.5 h-1.5 rounded-full bg-stream-green animate-pulse shadow-[0_0_5px_#4ade80]"></span>
+              <span id="player-status-text">SEDANG DIPUTAR</span>
+            </div>
+            <div id="player-title" class="text-xs font-bold text-white truncate w-full shadow-sm leading-tight mb-1">Song Title</div>
+
+            <div class="flex items-center justify-between mt-0.5">
+              <div class="text-[9px] text-gray-400 flex items-center gap-1.5">
+                <div id="player-req-avatar-container" class="w-3.5 h-3.5 rounded-full overflow-hidden border border-gray-600 shrink-0"></div>
+                <span id="player-req-name" class="font-medium text-gray-300 truncate max-w-[70px]">Name</span>
+              </div>
+
+              <!-- Controls: Prev, Play/Pause, Next -->
+              <div class="flex items-center gap-3 shrink-0 mr-1">
+                <button id="btn-prev" class="text-gray-400 hover:text-white transition-colors focus:outline-none" title="Ulangi Lagu">
+                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" /></svg>
+                </button>
+                <button id="btn-play-pause" class="text-white hover:text-stream-green hover:scale-110 transition-all focus:outline-none" title="Play/Pause">
+                  <!-- Pause Icon (Default when playing) -->
+                  <svg id="icon-pause" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
+                  <!-- Play Icon -->
+                  <svg id="icon-play" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                </button>
+                <button id="btn-skip" class="text-gray-400 hover:text-white transition-colors focus:outline-none" title="Skip Next">
+                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" /></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Toggle Dropdown Antrean -->
+        <div
+          id="player-queue-toggle"
+          class="hidden px-3 py-1.5 bg-black/30 hover:bg-black/50 cursor-pointer text-[9px] text-gray-400 border-t border-gray-800/50 flex justify-between items-center transition-colors">
+          <span class="flex items-center gap-1.5 font-medium"><span class="w-1 h-1 bg-gray-500 rounded-full"></span> Antrean (<span id="player-queue-count">0</span>)</span>
+          <svg id="queue-chevron" class="w-3 h-3 transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </div>
+
+        <!-- Up Next / Queue Info (Collapsible) -->
+        <div id="player-queue-container" class="hidden flex-col bg-[#05080c]">
+          <!-- Viewport 84px (Tepat untuk 3 baris @ 28px) -->
+          <div class="relative h-[84px] overflow-hidden" id="queue-viewport">
+            <div id="queue-list-wrapper" class="flex flex-col transition-transform duration-500 ease-in-out">
+              <!-- Items injected here by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress Bar (Clickable) -->
+        <div class="w-full h-1 bg-gray-800/80 cursor-pointer hover:h-2 transition-all group" id="progress-container">
+          <div id="player-progress" class="h-full bg-stream-green w-0 group-hover:bg-green-400 transition-all duration-[1000ms] ease-linear shadow-[0_0_10px_#4ade80]"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confetti Canvas -->
+    <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-[60] w-full h-full"></canvas>
+
+    <!-- Win Modal -->
+    <div id="win-modal-overlay" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[150] flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-500 pb-[10vh]">
+      <div
+        class="relative bg-[#0a1118]/95 backdrop-blur-2xl border border-gray-700/50 w-[90%] max-w-sm p-8 pt-10 rounded-3xl flex flex-col items-center text-center modal-glow transform transition-all duration-500 translate-y-8 scale-95"
+        id="win-modal-content">
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-gradient-to-r from-transparent via-stream-green to-transparent opacity-70 blur-[2px] rounded-t-3xl"></div>
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-[1px] bg-gradient-to-r from-transparent via-stream-green to-transparent opacity-100"></div>
+
+        <div
+          id="win-avatar-container"
+          class="relative mb-5 h-28 w-28 flex items-center justify-center rounded-full p-1 bg-gradient-to-b from-stream-green to-blue-500 shadow-[0_0_30px_rgba(74,222,128,0.25)]"></div>
+
+        <h2 id="win-title" class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-300 mb-2 tracking-tight drop-shadow-md">Tebakan Benar!</h2>
+        <p class="text-gray-400 text-[11px] mb-4 font-bold uppercase tracking-[0.2em]">Kata Rahasia</p>
+
+        <div
+          class="relative w-full py-5 rounded-2xl mb-8 bg-gradient-to-b from-[#121c29] to-[#040d14] border border-[#1e2d40] shadow-[inset_0_4px_20px_rgba(0,0,0,0.4)] overflow-hidden flex justify-center items-center">
+          <div
+            class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiIvPjwvc3ZnPg==')] opacity-50 pointer-events-none"></div>
+          <span id="win-word" class="relative text-3xl font-black text-stream-green tracking-[0.25em] uppercase drop-shadow-[0_0_15px_rgba(74,222,128,0.4)]">WORD</span>
+        </div>
+
+        <button
+          id="btn-restart"
+          class="pointer-events-auto w-full bg-gradient-to-r from-stream-green to-[#22c55e] text-[#040d14] font-bold text-lg py-3.5 rounded-xl hover:brightness-110 transition-all hover:scale-[1.03] active:scale-[0.97] shadow-[0_0_20px_rgba(74,222,128,0.3)] border-none">
+          Main Lagi
+        </button>
+      </div>
+    </div>
+
+    <script>
+      // Default Avatar
+      const userAvatarSVG = `
+            <svg viewBox="0 0 100 100" class="w-full h-full bg-[#2563eb]">
+                <circle cx="50%" cy="35%" r="18" fill="#ffffff"/>
+                <path d="M 20 100 C 20 60, 80 60, 80 100" fill="#ffffff"/>
+            </svg>
+        `;
+      const audioPlayer = new Audio();
+      audioPlayer.preload = "none";
+      let currentVideoDuration = 0;
+      let ytProgressInterval;
+
+      audioPlayer.addEventListener("playing", () => {
+        currentVideoDuration = audioPlayer.duration || 0;
+        clearInterval(ytProgressInterval);
+        ytProgressInterval = setInterval(updateYtProgress, 1000);
+        document.getElementById("icon-play").classList.add("hidden");
+        document.getElementById("icon-pause").classList.remove("hidden");
+        document.getElementById("player-thumb-container").style.animationPlayState = "running";
+        const statusDot = document.getElementById("player-status-dot");
+        statusDot.classList.add("animate-pulse", "bg-stream-green", "shadow-[0_0_5px_#4ade80]");
+        statusDot.classList.remove("bg-gray-500", "shadow-none");
+        document.getElementById("player-status-text").innerText = "SEDANG DIPUTAR";
+      });
+
+      audioPlayer.addEventListener("pause", () => {
+        clearInterval(ytProgressInterval);
+        document.getElementById("icon-pause").classList.add("hidden");
+        document.getElementById("icon-play").classList.remove("hidden");
+        document.getElementById("player-thumb-container").style.animationPlayState = "paused";
+        const statusDot = document.getElementById("player-status-dot");
+        statusDot.classList.remove("animate-pulse", "bg-stream-green", "shadow-[0_0_5px_#4ade80]");
+        statusDot.classList.add("bg-gray-500", "shadow-none");
+        document.getElementById("player-status-text").innerText = "DIJEDA";
+      });
+
+      audioPlayer.addEventListener("ended", () => {
+        clearInterval(ytProgressInterval);
+        if (globalWs && globalWs.readyState === WebSocket.OPEN) globalWs.send(JSON.stringify({ type: "track_finished" }));
+      });
+
+      audioPlayer.addEventListener("error", () => {
+        const msg = "Lagu gagal diputar. Melewati...";
+        showError(msg);
+        setTimeout(() => {
+          if (globalWs && globalWs.readyState === WebSocket.OPEN) globalWs.send(JSON.stringify({ type: "track_finished" }));
+        }, 2500);
+      });
+
+      function updateYtProgress() {
+        if (!audioPlayer.duration) return;
+        const percent = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+        document.getElementById("player-progress").style.width = percent + "%";
+      }
+
+      // --- MUSIC PLAYER UI HANDLERS ---
+      const musicPlayerOverlay = document.getElementById("music-player-overlay");
+      const playerThumbContainer = document.getElementById("player-thumb-container");
+      const playerThumbEl = document.getElementById("player-thumbnail");
+      const playerTitleEl = document.getElementById("player-title");
+      const playerReqAvatarContainer = document.getElementById("player-req-avatar-container");
+      const playerReqName = document.getElementById("player-req-name");
+
+      const queueToggleBtn = document.getElementById("player-queue-toggle");
+      const queueChevron = document.getElementById("queue-chevron");
+      const queueContainer = document.getElementById("player-queue-container");
+      const queueCountEl = document.getElementById("player-queue-count");
+      const queueWrapper = document.getElementById("queue-list-wrapper");
+
+      let queueScrollIndex = 0;
+      let queueScrollInterval;
+      let isQueueOpen = false;
+
+      function startQueueScroll() {
+        clearInterval(queueScrollInterval);
+        const itemsCount = queueWrapper.children.length;
+        queueScrollIndex = 0;
+        queueWrapper.style.transform = `translateY(0px)`;
+
+        if (itemsCount > 3) {
+          queueScrollInterval = setInterval(() => {
+            queueScrollIndex++;
+            if (queueScrollIndex > itemsCount - 3) {
+              queueScrollIndex = 0;
+            }
+            queueWrapper.style.transform = `translateY(-${queueScrollIndex * 28}px)`;
+          }, 3000);
+        }
+      }
+
+      function handlePlayTrack(track) {
+        playerTitleEl.innerText = track.title;
+        playerThumbEl.src = track.thumbnail;
+
+        if (track.requester) {
+          if (track.requester.avatar) {
+            playerReqAvatarContainer.innerHTML = `<img src="${track.requester.avatar}" class="w-full h-full object-cover">`;
+          } else {
+            playerReqAvatarContainer.innerHTML = userAvatarSVG;
+          }
+          playerReqName.innerText = track.requester.nickname;
+        }
+
+        musicPlayerOverlay.classList.remove("translate-y-[150%]", "opacity-0");
+        musicPlayerOverlay.classList.add("translate-y-0", "opacity-100");
+        playerThumbContainer.classList.add("animate-spin-slow");
+        playerThumbContainer.style.animationPlayState = "running";
+
+        // Pakai streamUrl dari backend (tidak ada blokir copyright)
+        audioPlayer.src = track.streamUrl || `/stream/${track.id}`;
+        audioPlayer.load();
+        audioPlayer.play().catch((e) => console.error("Autoplay blocked:", e));
+      }
+
+      function handleStopTrack() {
+        musicPlayerOverlay.classList.remove("translate-y-0", "opacity-100");
+        musicPlayerOverlay.classList.add("translate-y-[150%]", "opacity-0");
+        playerThumbContainer.style.animationPlayState = "paused";
+
+        audioPlayer.pause();
+        audioPlayer.src = "";
+      }
+
+      function handleQueueUpdate(queue) {
+        const count = queue.length;
+        if (count > 0) {
+          queueToggleBtn.classList.remove("hidden");
+          queueToggleBtn.classList.add("flex");
+          queueCountEl.innerText = `${count}`;
+
+          queueWrapper.innerHTML = "";
+          queue.forEach((track, index) => {
+            const reqName = track.requester ? track.requester.nickname : "Unknown";
+            queueWrapper.innerHTML += `
+                        <div class="flex items-center gap-2 px-3 h-[28px] shrink-0 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
+                            <span class="text-[9px] text-gray-500 font-bold w-3">${index + 1}.</span>
+                            <div class="truncate flex-1 text-[10px] text-gray-300 font-medium">${track.title}</div>
+                            <div class="truncate max-w-[60px] text-[9px] text-gray-500 shrink-0">${reqName}</div>
+                        </div>
+                    `;
+          });
+
+          startQueueScroll();
+        } else {
+          queueToggleBtn.classList.remove("flex");
+          queueToggleBtn.classList.add("hidden");
+
+          queueContainer.classList.remove("flex");
+          queueContainer.classList.add("hidden");
+
+          isQueueOpen = false;
+          queueChevron.classList.remove("rotate-180");
+          clearInterval(queueScrollInterval);
+        }
+      }
+
+      // --- GAME LOGIC ---
+      const defaultDictionary = [
+        "abadi",
+        "angin",
+        "bintang",
+        "bunga",
+        "cahaya",
+        "cinta",
+        "danau",
+        "dunia",
+        "elang",
+        "emas",
+        "fajar",
+        "flora",
+        "gajah",
+        "gunung",
+        "hutan",
+        "hujan",
+        "indah",
+        "ikan",
+        "jalan",
+        "jendela",
+        "kaca",
+        "kapal",
+        "langit",
+        "laut",
+        "malam",
+        "mentari",
+        "naga",
+        "napas",
+        "ombak",
+        "orang",
+        "pantai",
+        "pulau",
+        "raja",
+        "ruang",
+        "sungai",
+        "tanah",
+        "taman",
+        "udara",
+        "ular",
+        "waktu",
+        "warna",
+        "zaman",
+        "zebra",
+        "alam",
+        "batu",
+        "cincin",
+        "daun",
+        "esok",
+        "gitar",
+        "hari",
+        "ilmu",
+        "jiwa",
+        "kopi",
+        "luka",
+        "mimpi",
+        "nada",
+        "obat",
+        "pintu",
+        "roda",
+        "suara",
+        "topi",
+        "uang",
+        "wajah",
+        "kunci",
+        "surat",
+        "buku",
+        "meja",
+        "kursi",
+        "sepatu",
+        "baju",
+        "gelas",
+        "piring",
+        "sendok",
+        "garpu",
+        "pisau",
+        "kamera",
+        "sepeda",
+        "motor",
+        "mobil",
+        "kereta"
+      ].sort();
+
+      const tierData = [
+        { name: "Newbie", minWins: 0, color: "text-gray-400 bg-gray-900 border-gray-700" },
+        { name: "Scholar", minWins: 1, color: "text-green-400 bg-green-900/30 border-green-800" },
+        { name: "Wordsmith", minWins: 3, color: "text-blue-400 bg-blue-900/30 border-blue-800" },
+        { name: "Academic", minWins: 7, color: "text-indigo-400 bg-indigo-900/30 border-indigo-800" },
+        { name: "Professor", minWins: 15, color: "text-purple-400 bg-purple-900/30 border-purple-800" },
+        { name: "Linguist", minWins: 25, color: "text-fuchsia-400 bg-fuchsia-900/30 border-fuchsia-800" },
+        { name: "Lexicographer", minWins: 40, color: "text-rose-400 bg-rose-900/30 border-rose-800" },
+        { name: "Etymologist", minWins: 60, color: "text-orange-400 bg-orange-900/30 border-orange-800" },
+        { name: "Philologist", minWins: 85, color: "text-amber-400 bg-amber-900/30 border-amber-800" },
+        { name: "Grammarian", minWins: 120, color: "text-yellow-400 bg-yellow-900/30 border-yellow-800" },
+        { name: "Rhetorician", minWins: 160, color: "text-red-400 bg-red-900/30 border-red-800" },
+        { name: "Savant", minWins: 200, color: "text-cyan-300 bg-cyan-900/40 border-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.6)]" }
+      ];
+
+      let userWins = JSON.parse(localStorage.getItem("guessGameWins") || "{}");
+      let lastWinnerData = JSON.parse(localStorage.getItem("guessGameLastWinner") || "null");
+
+      function getTierInfo(wins) {
+        for (let i = tierData.length - 1; i >= 0; i--) {
+          if (wins >= tierData[i].minWins) {
+            return tierData[i];
+          }
+        }
+        return tierData[0];
+      }
+
+      function getNextTierInfo(wins) {
+        for (let i = 0; i < tierData.length; i++) {
+          if (wins < tierData[i].minWins) {
+            return tierData[i];
+          }
+        }
+        return null;
+      }
+
+      let targetWords = [...defaultDictionary];
+      let availableTargetWords = [];
+      let validWords = [...defaultDictionary];
+
+      let secretWord = "";
+      let guesses = [];
+      let guessDetails = {};
+      let isGameOver = false;
+      let latestGuess = "";
+      let autoRestartTimeout = null;
+      let autoRestartInterval = null;
+      let globalWs = null;
+
+      const listEl = document.getElementById("guess-list");
+      const countEl = document.getElementById("guess-count");
+      const emptyStateEl = document.getElementById("empty-state");
+      const errorToastEl = document.getElementById("error-toast");
+      const winModalOverlay = document.getElementById("win-modal-overlay");
+      const winModalContent = document.getElementById("win-modal-content");
+      const winWordEl = document.getElementById("win-word");
+      const winTitleEl = document.getElementById("win-title");
+      const winAvatarContainer = document.getElementById("win-avatar-container");
+      const btnRestart = document.getElementById("btn-restart");
+      const wsStatusIndicator = document.getElementById("ws-status-indicator");
+      const confettiCanvas = document.getElementById("confetti-canvas");
+      const ctxConfetti = confettiCanvas.getContext("2d");
+
+      const lastWinnerBanner = document.getElementById("last-winner-banner");
+      const lastWinnerAvatarContainer = document.getElementById("last-winner-avatar");
+      const lastWinnerNameEl = document.getElementById("last-winner-name");
+      const lastSecretWordEl = document.getElementById("last-secret-word");
+
+      let dividerForm;
+      let dynamicInput;
+
+      function updateLastWinnerBanner() {
+        if (lastWinnerData) {
+          lastWinnerBanner.classList.remove("hidden");
+          lastWinnerNameEl.innerText = lastWinnerData.nickname;
+          lastSecretWordEl.innerText = lastWinnerData.word;
+
+          if (lastWinnerData.profilePic) {
+            lastWinnerAvatarContainer.innerHTML = `<img src="${lastWinnerData.profilePic}" class="w-full h-full object-cover">`;
+          } else {
+            lastWinnerAvatarContainer.innerHTML = userAvatarSVG;
+          }
+        } else {
+          lastWinnerBanner.classList.add("hidden");
+        }
+      }
+
+      let confettiParticles = [];
+      let confettiAnimationId;
+
+      function resizeConfetti() {
+        confettiCanvas.width = window.innerWidth;
+        confettiCanvas.height = window.innerHeight;
+      }
+      window.addEventListener("resize", resizeConfetti);
+      resizeConfetti();
+
+      function shootConfetti() {
+        confettiParticles = [];
+        const colors = ["#4ade80", "#3b82f6", "#facc15", "#f472b6", "#a855f7", "#ffffff"];
+        for (let i = 0; i < 80; i++) {
+          confettiParticles.push({
+            x: confettiCanvas.width / 2,
+            y: confettiCanvas.height * 0.4,
+            r: Math.random() * 5 + 2,
+            dx: (Math.random() - 0.5) * 6,
+            dy: Math.random() * -15 - 10,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            tilt: Math.floor(Math.random() * 10) - 10,
+            tiltAngleInc: Math.random() * 0.07 + 0.05,
+            tiltAngle: 0
+          });
+        }
+        if (!confettiAnimationId) renderConfetti();
+      }
+
+      function renderConfetti() {
+        ctxConfetti.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        let activeParticles = 0;
+        confettiParticles.forEach((p) => {
+          if (p.y < confettiCanvas.height + 20) {
+            activeParticles++;
+            p.tiltAngle += p.tiltAngleInc;
+            p.y += (Math.cos(p.tiltAngle) + 1 + p.r / 2) / 2;
+            p.x += Math.sin(p.tiltAngle) * 2;
+            p.dy += 0.08;
+            p.y += p.dy;
+            p.x += p.dx;
+            ctxConfetti.beginPath();
+            ctxConfetti.lineWidth = p.r;
+            ctxConfetti.strokeStyle = p.color;
+            ctxConfetti.moveTo(p.x + p.tilt + p.r, p.y);
+            ctxConfetti.lineTo(p.x + p.tilt, p.y + p.tilt + p.r);
+            ctxConfetti.stroke();
+          }
+        });
+        if (activeParticles > 0) {
+          confettiAnimationId = requestAnimationFrame(renderConfetti);
+        } else {
+          cancelAnimationFrame(confettiAnimationId);
+          confettiAnimationId = null;
+          ctxConfetti.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        }
+      }
+
+      function playWinSound() {
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContext) return;
+          const ctx = new AudioContext();
+          const notes = [523.25, 659.25, 783.99, 987.77, 1046.5];
+          let startTime = ctx.currentTime;
+          notes.forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(freq, startTime + i * 0.1);
+            gainNode.gain.setValueAtTime(0, startTime + i * 0.1);
+            gainNode.gain.linearRampToValueAtTime(0.15, startTime + i * 0.1 + 0.05);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + i * 0.1 + 0.6);
+            osc.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            osc.start(startTime + i * 0.1);
+            osc.stop(startTime + i * 0.1 + 0.6);
+          });
+        } catch (e) {
+        }
+      }
+
+      function updateWSStatus(status) {
+        if (!wsStatusIndicator) return;
+        wsStatusIndicator.classList.remove("text-yellow-400", "text-stream-green", "text-red-500");
+        if (status === "connecting") wsStatusIndicator.classList.add("text-yellow-400");
+        else if (status === "connected") wsStatusIndicator.classList.add("text-stream-green");
+        else if (status === "disconnected") wsStatusIndicator.classList.add("text-red-500");
+      }
+
+      function setupWebSocket() {
+        updateWSStatus("connecting");
+
+        let wsHost = window.location.hostname;
+        if (!wsHost || wsHost === "") wsHost = "localhost";
+
+        const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const wsUrl = `${wsProtocol}//${wsHost}:3000`;
+        const ws = new WebSocket(wsUrl);
+        globalWs = ws;
+
+        ws.onopen = function () {
+          updateWSStatus("connected");
+        };
+
+        ws.onmessage = function (data) {
+          try {
+            const message = JSON.parse(data.data);
+            const { event, data: eventData } = message;
+
+            if (event === "chat") {
+              let nick = eventData.nickname || eventData.uniqueId || "Penonton";
+              nick = nick.trim();
+              if (nick.startsWith("@")) nick = nick.substring(1);
+
+              const comment = eventData.comment || "";
+              if (comment) {
+                if (comment.trim().toLowerCase().startsWith("!myrank")) {
+                  handleRankCommand(nick, eventData.profilePictureUrl);
+                } else {
+                  processGuess(comment, nick, eventData.profilePictureUrl, false);
+                }
+              }
+            } else if (event === "play_track") {
+              handlePlayTrack(eventData);
+            } else if (event === "player_stop") {
+              handleStopTrack();
+            } else if (event === "queue_update") {
+              handleQueueUpdate(eventData);
+            }
+          } catch (error) {
+            console.error("Error parsing message:", error);
+          }
+        };
+
+        ws.onclose = function () {
+          updateWSStatus("disconnected");
+          setTimeout(setupWebSocket, 5000);
+        };
+
+        ws.onerror = function (err) {
+          updateWSStatus("disconnected");
+        };
+      }
+
+      function toggleFullScreen() {
+        const elem = document.documentElement;
+        if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
+          if (elem.requestFullscreen) {
+            elem.requestFullscreen();
+          } else if (elem.msRequestFullscreen) {
+            elem.msRequestFullscreen();
+          } else if (elem.mozRequestFullScreen) {
+            elem.mozRequestFullScreen();
+          } else if (elem.webkitRequestFullscreen) {
+            elem.webkitRequestFullscreen();
+          }
+        } else {
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+          } else if (document.mozCancelFullScreen) {
+            document.mozCancelFullScreen();
+          } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+          }
+        }
+      }
+
+      async function loadDictionaries() {
+        try {
+          const [kataUmumRes, kamusRes] = await Promise.all([fetch("kata_umum.txt").catch(() => null), fetch("kamus.txt").catch(() => null)]);
+
+          let kataUmumLoaded = false;
+          let kamusLoaded = false;
+
+          if (kataUmumRes && kataUmumRes.ok) {
+            const text = await kataUmumRes.text();
+            targetWords = text
+              .split(/\r?\n/)
+              .map((w) => w.trim().toLowerCase())
+              .filter((w) => /^[a-z]+$/.test(w));
+            if (targetWords.length > 0) kataUmumLoaded = true;
+          }
+
+          if (kamusRes && kamusRes.ok) {
+            const text = await kamusRes.text();
+            validWords = text
+              .split(/\r?\n/)
+              .map((w) => w.trim().toLowerCase())
+              .filter((w) => /^[a-z]+$/.test(w));
+            if (validWords.length > 0) kamusLoaded = true;
+          }
+
+          if (!kataUmumLoaded || !kamusLoaded) {
+            if (!kataUmumLoaded) targetWords = [...defaultDictionary];
+            if (!kamusLoaded) validWords = [...defaultDictionary];
+          }
+
+          targetWords.sort();
+          availableTargetWords = [...targetWords];
+        } catch (error) {
+          targetWords.sort();
+          availableTargetWords = [...targetWords];
+        }
+        emptyStateEl.style.display = "none";
+      }
+
+      function initGame() {
+        clearTimeout(autoRestartTimeout);
+        clearInterval(autoRestartInterval);
+        if (btnRestart) btnRestart.innerText = "Main Lagi";
+
+        if (availableTargetWords.length === 0) availableTargetWords = [...targetWords];
+
+        const randomIndex = Math.floor(Math.random() * availableTargetWords.length);
+        secretWord = availableTargetWords.splice(randomIndex, 1)[0];
+
+        guesses = [];
+        guessDetails = {};
+        latestGuess = "";
+        isGameOver = false;
+        countEl.innerText = "0";
+
+        winModalOverlay.classList.remove("opacity-100");
+        winModalOverlay.classList.add("opacity-0", "pointer-events-none");
+        winModalContent.classList.remove("scale-100", "translate-y-0");
+        winModalContent.classList.add("scale-95", "translate-y-8");
+
+        ctxConfetti.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        if (confettiAnimationId) {
+          cancelAnimationFrame(confettiAnimationId);
+          confettiAnimationId = null;
+        }
+
+        dividerForm.style.display = "block";
+        dynamicInput.value = "";
+        dynamicInput.setAttribute("inputmode", "none");
+
+        updateLastWinnerBanner();
+        renderUI(true);
+      }
+
+      function getPrefixMatchCount(guess, secret) {
+        let count = 0;
+        for (let i = 0; i < Math.min(guess.length, secret.length); i++) {
+          if (guess[i] === secret[i]) count++;
+          else break;
+        }
+        return count;
+      }
+
+      function showError(msg) {
+        errorToastEl.innerText = msg;
+        errorToastEl.classList.remove("hidden", "opacity-0");
+        errorToastEl.classList.add("opacity-100");
+        setTimeout(() => {
+          errorToastEl.classList.remove("opacity-100");
+          errorToastEl.classList.add("opacity-0");
+          setTimeout(() => {
+            errorToastEl.classList.add("hidden");
+          }, 300);
+        }, 2000);
+      }
+
+      function processGuess(guess, nickname = "Kamu", profilePic = null, isLocal = true) {
+        if (isGameOver) return false;
+
+        guess = guess.toLowerCase().replace(/[^a-z]/g, "");
+
+        if (!guess) {
+          if (isLocal) showError("Hanya huruf abjad yang diperbolehkan!");
+          return false;
+        }
+        if (!validWords.includes(guess)) {
+          if (isLocal) showError("Kata tidak terdaftar di kamus!");
+          return false;
+        }
+        if (guesses.includes(guess)) {
+          if (isLocal) showError("Kata sudah pernah ditebak!");
+          return false;
+        }
+
+        latestGuess = guess;
+        guesses.push(guess);
+        guesses.sort();
+
+        guessDetails[guess] = { nickname, profilePic };
+        countEl.innerText = guesses.length;
+
+        if (guess === secretWord) handleWin();
+        else renderUI(isLocal);
+
+        return true;
+      }
+
+      function createDummyElement() {
+        const item = document.createElement("div");
+        item.className = "guess-item-node p-2 relative flex items-center rounded-md mb-1 border border-transparent invisible pointer-events-none";
+        // Struktur HTML sama persis dengan item tebakan untuk memastikan tinggi/dimensi nya 100% identik
+        item.innerHTML = `
+                <div class="flex items-center gap-2.5 relative z-10 w-[45%] max-w-[45%]">
+                    <div class="w-8 h-8 rounded-full shrink-0 border border-transparent"></div>
+                    <div class="flex flex-col min-w-0 justify-center">
+                        <span class="font-bold text-[13px] leading-tight mb-0.5 text-transparent">Placeholder</span>
+                        <div class="flex items-center">
+                            <span class="text-[8px] px-1.5 py-0.5 rounded border border-transparent text-transparent leading-none">Placeholder</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="absolute inset-0 flex items-center justify-center font-bold text-[16px] pointer-events-none z-0 text-transparent">
+                    Placeholder
+                </div>
+            `;
+        return item;
+      }
+
+      function createGuessElement(guess) {
+        const matchCount = getPrefixMatchCount(guess, secretWord);
+        const prefix = guess.substring(0, matchCount);
+        const suffix = guess.substring(matchCount);
+        const isLatest = guess === latestGuess;
+        const details = guessDetails[guess] || { nickname: "Kamu", profilePic: null };
+
+        const wins = userWins[details.nickname] || 0;
+        const tierInfo = getTierInfo(wins);
+
+        const item = document.createElement("div");
+        item.className = `guess-item-node bg-stream-row p-2 relative flex items-center rounded-md mb-1 transition-all ${isLatest ? "list-enter border border-white/80 shadow-sm" : "border border-transparent"}`;
+
+        let wordHTML = "";
+        if (matchCount > 0) wordHTML = `<span class="text-stream-green">${prefix}</span><span class="text-white">${suffix}</span>`;
+        else wordHTML = `<span class="text-white">${guess}</span>`;
+
+        let avatarHTML = details.profilePic
+          ? `<img src="${details.profilePic}" alt="avatar" class="w-8 h-8 rounded-full shrink-0 object-cover border border-gray-600">`
+          : `<div class="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-gray-600">${userAvatarSVG}</div>`;
+
+        item.innerHTML = `
+                <div class="flex items-center gap-2.5 relative z-10 w-[45%] max-w-[45%]">
+                    ${avatarHTML}
+                    <div class="flex flex-col min-w-0 justify-center">
+                        <span class="font-bold text-white text-[13px] truncate leading-tight mb-0.5" title="${details.nickname}">${details.nickname}</span>
+                        <div class="flex items-center">
+                            <span class="text-[8px] font-bold tracking-widest uppercase px-1.5 py-0.5 rounded border shadow-sm ${tierInfo.color} leading-none truncate" title="${wins} Kemenangan">
+                                ${tierInfo.name}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="absolute inset-0 flex items-center justify-center font-bold text-[16px] tracking-wide pointer-events-none z-0">
+                    ${wordHTML}
+                </div>
+            `;
+        return item;
+      }
+
+      function updateDividerInfo(lower, upper, isInitial = false) {
+        const lowerText = lower ? lower : "a";
+        const upperText = upper ? upper : "z";
+        const placeholderText = isInitial ? "Ketik kata pertama untuk memulai..." : `Kata rahasia di antara '${lowerText}' dan '${upperText}'`;
+
+        dynamicInput.placeholder = placeholderText;
+        if (isInitial) {
+          dynamicInput.classList.remove("text-left");
+          dynamicInput.classList.add("text-center");
+        } else {
+          dynamicInput.classList.remove("text-center");
+          dynamicInput.classList.add("text-left");
+        }
+      }
+
+      function renderUI(shouldFocus = false) {
+        const oldItems = listEl.querySelectorAll(".guess-item-node");
+        oldItems.forEach((item) => item.remove());
+
+        const VISIBLE_HALF = 4;
+
+        if (guesses.length === 0) {
+          updateDividerInfo(null, null, true);
+          dividerForm.style.display = "block";
+
+          // Tambahkan Dummy Element di Atas
+          for (let i = 0; i < VISIBLE_HALF; i++) {
+            const dummy = createDummyElement();
+            dummy.style.order = 1;
+            listEl.appendChild(dummy);
+          }
+          
+          // Tambahkan Dummy Element di Bawah
+          for (let i = 0; i < VISIBLE_HALF; i++) {
+            const dummy = createDummyElement();
+            dummy.style.order = 3;
+            listEl.appendChild(dummy);
+          }
+
+          if (shouldFocus) setTimeout(() => dynamicInput.focus({ preventScroll: true }), 50);
+          return;
+        }
+
+        let dividerIndex = guesses.length;
+        for (let i = 0; i < guesses.length; i++) {
+          if (guesses[i] >= secretWord) {
+            dividerIndex = i;
+            break;
+          }
+        }
+
+        if (isGameOver) {
+          dividerForm.style.display = "none";
+          let startIndex = Math.max(0, dividerIndex - VISIBLE_HALF);
+          let endIndex = Math.min(guesses.length, dividerIndex + VISIBLE_HALF + 1);
+
+          // Padding atas saat game over
+          const realAbove = dividerIndex - startIndex;
+          for (let i = 0; i < (VISIBLE_HALF - realAbove); i++) {
+            const dummy = createDummyElement();
+            dummy.style.order = 1;
+            listEl.appendChild(dummy);
+          }
+
+          for (let i = startIndex; i < endIndex; i++) {
+            const el = createGuessElement(guesses[i]);
+            el.style.order = 1;
+            listEl.appendChild(el);
+          }
+
+          // Padding bawah saat game over
+          const realBelow = endIndex - dividerIndex - 1;
+          const padBelowCount = Math.max(0, VISIBLE_HALF - realBelow);
+          for (let i = 0; i < padBelowCount; i++) {
+            const dummy = createDummyElement();
+            dummy.style.order = 1;
+            listEl.appendChild(dummy);
+          }
+        } else {
+          dividerForm.style.display = "block";
+          let startIndex = Math.max(0, dividerIndex - VISIBLE_HALF);
+          let endIndex = Math.min(guesses.length, dividerIndex + VISIBLE_HALF);
+          let lowerBound = dividerIndex > 0 ? guesses[dividerIndex - 1] : null;
+          let upperBound = dividerIndex < guesses.length ? guesses[dividerIndex] : null;
+
+          // Padding atas dengan dummy
+          const realAbove = dividerIndex - startIndex;
+          for (let i = 0; i < (VISIBLE_HALF - realAbove); i++) {
+            const dummy = createDummyElement();
+            dummy.style.order = 1;
+            listEl.appendChild(dummy);
+          }
+
+          for (let i = startIndex; i < dividerIndex; i++) {
+            const el = createGuessElement(guesses[i]);
+            el.style.order = 1;
+            listEl.appendChild(el);
+          }
+
+          updateDividerInfo(lowerBound, upperBound, false);
+
+          for (let i = dividerIndex; i < endIndex; i++) {
+            const el = createGuessElement(guesses[i]);
+            el.style.order = 3;
+            listEl.appendChild(el);
+          }
+
+          // Padding bawah dengan dummy
+          const realBelow = endIndex - dividerIndex;
+          for (let i = 0; i < (VISIBLE_HALF - realBelow); i++) {
+            const dummy = createDummyElement();
+            dummy.style.order = 3;
+            listEl.appendChild(dummy);
+          }
+        }
+
+        // Kembalikan fokus hanya jika diminta secara eksplisit (host menebak)
+        if (shouldFocus) {
+          setTimeout(() => {
+            dynamicInput.focus({ preventScroll: true });
+          }, 50);
+        }
+      }
+
+      function handleRankCommand(nickname, profilePic) {
+        const wins = userWins[nickname] || 0;
+        const currentTier = getTierInfo(wins);
+        const nextTier = getNextTierInfo(wins);
+
+        const container = document.getElementById("rank-toast-container");
+        container.innerHTML = "";
+        const toast = document.createElement("div");
+
+        let progressHTML = "";
+        if (nextTier) {
+          const needed = nextTier.minWins - wins;
+          const currentFloor = currentTier.minWins;
+          const totalRequired = nextTier.minWins - currentFloor;
+          const currentProgress = wins - currentFloor;
+          const progressPercent = Math.min(100, Math.max(0, (currentProgress / totalRequired) * 100));
+          const nextColorClass = nextTier.color.split(" ")[0];
+
+          progressHTML = `
+                    <div class="w-full mt-3">
+                        <div class="flex justify-between items-end mb-1">
+                            <span class="text-[10px] font-medium text-gray-400 tracking-wide">${wins} Menang</span>
+                            <span class="text-[10px] font-bold ${nextColorClass}">${needed} lagi ke ${nextTier.name}</span>
+                        </div>
+                        <div class="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
+                            <div class="h-full bg-current rounded-full transition-all duration-1000 ease-out" style="width: 0%;" id="progress-fill"></div>
+                        </div>
+                    </div>
+                `;
+          setTimeout(() => {
+            const bar = document.getElementById("progress-fill");
+            if (bar) bar.style.width = `${progressPercent}%`;
+          }, 100);
+        } else {
+          progressHTML = `<div class="mt-3 text-[11px] text-cyan-300 font-bold shadow-[0_0_8px_rgba(34,211,238,0.5)] tracking-widest uppercase text-center w-full">PANGKAT MAKSIMAL!</div>`;
+        }
+
+        let avatarHTML = profilePic
+          ? `<img src="${profilePic}" alt="avatar" class="w-12 h-12 rounded-full shrink-0 object-cover border-2 border-gray-600 shadow-sm">`
+          : `<div class="w-12 h-12 rounded-full shrink-0 border-2 border-gray-600 flex items-center justify-center bg-[#2563eb] overflow-hidden shadow-sm">${userAvatarSVG}</div>`;
+
+        toast.className = `relative overflow-hidden bg-[#0a1118]/90 backdrop-blur-xl border border-gray-700/50 p-4 rounded-2xl shadow-[0_10px_40px_rgb(0,0,0,0.6)] flex flex-col transform transition-all duration-500 translate-y-8 opacity-0 max-w-[calc(100vw-2rem)] w-80`;
+        toast.innerHTML = `
+                <div class="flex items-center gap-3 w-full">
+                    ${avatarHTML}
+                    <div class="flex-1 min-w-0 flex flex-col justify-center">
+                        <div class="font-bold text-[14px] text-white truncate leading-tight mb-1.5 shadow-sm" title="${nickname}">${nickname}</div>
+                        <div class="inline-flex w-fit items-center text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded border shadow-sm ${currentTier.color}">${currentTier.name}</div>
+                    </div>
+                </div>
+                <div class="${nextTier ? nextTier.color.split(" ")[0] : "text-cyan-300"} w-full">${progressHTML}</div>
+            `;
+        container.appendChild(toast);
+
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            toast.classList.remove("translate-y-8", "opacity-0");
+            toast.classList.add("translate-y-0", "opacity-100");
+          });
+        });
+
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.classList.remove("translate-y-0", "opacity-100");
+            toast.classList.add("translate-y-8", "opacity-0", "scale-95");
+            setTimeout(() => {
+              if (toast.parentNode) toast.remove();
+            }, 500);
+          }
+        }, 6000);
+      }
+
+      function handleWin() {
+        const details = guessDetails[secretWord] || { nickname: "Kamu", profilePic: null };
+        userWins[details.nickname] = (userWins[details.nickname] || 0) + 1;
+        localStorage.setItem("guessGameWins", JSON.stringify(userWins));
+
+        lastWinnerData = { nickname: details.nickname, profilePic: details.profilePic, word: secretWord };
+        localStorage.setItem("guessGameLastWinner", JSON.stringify(lastWinnerData));
+
+        isGameOver = true;
+        renderUI();
+
+        if (details.profilePic) winAvatarContainer.innerHTML = `<img src="${details.profilePic}" class="w-full h-full rounded-full object-cover border-[3px] border-[#0a1118]">`;
+        else winAvatarContainer.innerHTML = `<div class="w-full h-full rounded-full overflow-hidden border-[3px] border-[#0a1118]">${userAvatarSVG}</div>`;
+
+        winTitleEl.innerText = `${details.nickname} Menang!`;
+
+        setTimeout(() => {
+          winWordEl.innerText = secretWord;
+          winModalOverlay.classList.remove("opacity-0", "pointer-events-none");
+          winModalOverlay.classList.add("opacity-100");
+          winModalContent.classList.remove("scale-95", "translate-y-8");
+          winModalContent.classList.add("scale-100", "translate-y-0");
+
+          playWinSound();
+          shootConfetti();
+
+          let countdown = 10;
+          btnRestart.innerText = `Main Lagi (${countdown}s)`;
+
+          autoRestartInterval = setInterval(() => {
+            countdown--;
+            if (countdown > 0) btnRestart.innerText = `Main Lagi (${countdown}s)`;
+            else clearInterval(autoRestartInterval);
+          }, 1000);
+
+          autoRestartTimeout = setTimeout(() => {
+            initGame();
+          }, 10000);
+        }, 500);
+      }
+
+      // --- EVENT LISTENERS ---
+      btnRestart.addEventListener("click", initGame);
+
+      document.addEventListener("DOMContentLoaded", async () => {
+        dividerForm = document.getElementById("secret-divider");
+        dynamicInput = document.getElementById("dynamic-guess-input");
+
+        // Tambahan: kembalikan inputmode none jika keyboard ditutup/fokus hilang oleh Host
+        dynamicInput.addEventListener("blur", () => {
+          if (!isGameOver) {
+            dynamicInput.setAttribute("inputmode", "none");
+          }
+        });
+
+        dividerForm.onsubmit = function (e) {
+          e.preventDefault();
+          const inputVal = dynamicInput.value;
+          if (inputVal) {
+            if (inputVal.trim().toLowerCase().startsWith("!myrank")) {
+              handleRankCommand("Host", null);
+              dynamicInput.value = "";
+            }
+            // Simulasi !play (Untuk testing form host)
+            else if (inputVal.trim().toLowerCase().startsWith("!play ")) {
+              if (globalWs && globalWs.readyState === WebSocket.OPEN) {
+                globalWs.send(
+                  JSON.stringify({
+                    type: "simulate_chat",
+                    data: { comment: inputVal, nickname: "Host", profilePictureUrl: null }
+                  })
+                );
+              }
+              dynamicInput.value = "";
+            } else if (inputVal.trim().toLowerCase() === "!skip") {
+              if (globalWs && globalWs.readyState === WebSocket.OPEN) {
+                globalWs.send(JSON.stringify({ type: "simulate_chat", data: { comment: "!skip" } }));
+              }
+              dynamicInput.value = "";
+            } else {
+              const success = processGuess(inputVal, "Host", null, true);
+              if (success) dynamicInput.value = "";
+            }
+          }
+        };
+
+        function activateKeyboard() {
+          if (isGameOver) return;
+          if (dynamicInput.getAttribute("inputmode") === "none") {
+            dynamicInput.removeAttribute("inputmode");
+            dynamicInput.blur();
+            setTimeout(() => dynamicInput.focus({ preventScroll: true }), 50);
+          } else {
+            dynamicInput.focus({ preventScroll: true });
+          }
+        }
+
+        listEl.addEventListener("click", activateKeyboard);
+
+        // Music Player Buttons Logic
+        const btnPrev = document.getElementById("btn-prev");
+        const btnPlayPause = document.getElementById("btn-play-pause");
+        const btnSkip = document.getElementById("btn-skip");
+        const progressContainer = document.getElementById("progress-container");
+
+        // Queue Toggle Logic
+        const queueToggleBtn = document.getElementById("player-queue-toggle");
+        const queueChevron = document.getElementById("queue-chevron");
+
+        queueToggleBtn.addEventListener("click", () => {
+          isQueueOpen = !isQueueOpen;
+          if (isQueueOpen) {
+            queueContainer.classList.remove("hidden");
+            queueContainer.classList.add("flex");
+            queueChevron.classList.add("rotate-180");
+          } else {
+            queueContainer.classList.remove("flex");
+            queueContainer.classList.add("hidden");
+            queueChevron.classList.remove("rotate-180");
+          }
+        });
+
+        btnPrev.addEventListener("click", () => {
+          audioPlayer.currentTime = 0;
+        });
+
+        btnPlayPause.addEventListener("click", () => {
+          if (audioPlayer.paused) audioPlayer.play();
+          else audioPlayer.pause();
+        });
+
+        btnSkip.addEventListener("click", () => {
+          if (globalWs && globalWs.readyState === WebSocket.OPEN) {
+            globalWs.send(JSON.stringify({ type: "simulate_chat", data: { comment: "!skip" } }));
+          }
+        });
+
+        progressContainer.addEventListener("click", (e) => {
+          if (!audioPlayer.duration) return;
+          const rect = progressContainer.getBoundingClientRect();
+          const percentage = (e.clientX - rect.left) / rect.width;
+          audioPlayer.currentTime = audioPlayer.duration * percentage;
+        });
+
+        setupWebSocket();
+        await loadDictionaries();
+        initGame();
+      });
+    </script>
+  </body>
+</html>

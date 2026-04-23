@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@theme {
+  /* Font */
+  --font-family-sans: "Inter", sans-serif;
+
+  /* Custom colors: stream-* */
+  --color-stream-bg: #040d14;
+  --color-stream-row: #0e1726;
+  --color-stream-divider: #09111a;
+  --color-stream-green: #4ade80;
+}
