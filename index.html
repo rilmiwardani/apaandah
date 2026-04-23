@@ -671,7 +671,7 @@
         if (!wsHost || wsHost === "") wsHost = "localhost";
 
         const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        const wsUrl = `localhost:3000`;
+        const wsUrl = `ws://localhost:3000`;
         const ws = new WebSocket(wsUrl);
         globalWs = ws;
 
