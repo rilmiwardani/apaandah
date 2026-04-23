@@ -667,7 +667,7 @@
       function setupWebSocket() {
         updateWSStatus("connecting");
 
-        let wsHost = window.location.hostname;
+        let wsHost = "localhost";
         if (!wsHost || wsHost === "") wsHost = "localhost";
 
         const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
