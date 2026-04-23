@@ -1,0 +1,20 @@
+{
+  "name": "word-server",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js" 
+},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@tailwindcss/cli": "^4.2.4",
+    "express": "^5.2.1",
+    "tailwindcss": "^4.2.4",
+    "tiktok-live-connector": "^2.1.1-beta1",
+    "ws": "^8.20.0",
+    "yt-search": "^2.13.1"
+  }
+}
