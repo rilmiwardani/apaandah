@@ -667,11 +667,11 @@
       function setupWebSocket() {
         updateWSStatus("connecting");
 
-        let wsHost = "localhost";
+        let wsHost = window.location.hostname;
         if (!wsHost || wsHost === "") wsHost = "localhost";
 
         const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        const wsUrl = `${wsProtocol}//${wsHost}:3000`;
+        const wsUrl = `localhost:3000`;
         const ws = new WebSocket(wsUrl);
         globalWs = ws;
 
