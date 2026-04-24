@@ -5,12 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>HAH APAAN??</title>
     <meta name="description" content="Game tebak kata seru untuk TikTok Live - Cari kata rahasianya!" />
-    <!-- PRODUCTION NOTE: Ganti CDN ini dengan Tailwind CLI build untuk performa optimal -->
-    <link rel="stylesheet" href="./output.css" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-
+    <link href="/output.css" rel="stylesheet" />
     <style>
       body {
         background-color: #040d14;
@@ -66,8 +64,6 @@
     </style>
   </head>
   <body class="h-screen w-screen flex items-center justify-center font-sans antialiased">
-
-
     <!-- Main Game Container (Mobile/Chat format) -->
     <main class="w-full max-w-lg h-full md:h-[90vh] flex flex-col relative bg-stream-bg md:border md:border-gray-800 md:rounded-xl overflow-hidden shadow-2xl">
       <!-- Header -->
@@ -289,6 +285,8 @@
       });
 
       audioPlayer.addEventListener("error", () => {
+        // Hanya tampilkan error jika memang sedang ada lagu yang dicoba diputar
+        if (!audioPlayer.src || audioPlayer.src === window.location.href) return;
         const msg = "Lagu gagal diputar. Melewati...";
         showError(msg);
         setTimeout(() => {
@@ -356,9 +354,15 @@
         playerThumbContainer.style.animationPlayState = "running";
 
         // Pakai streamUrl dari backend (tidak ada blokir copyright)
+        audioPlayer.pause();
+        audioPlayer.removeAttribute("src");
+        audioPlayer.load();
         audioPlayer.src = track.streamUrl || `/stream/${track.id}`;
         audioPlayer.load();
-        audioPlayer.play().catch((e) => console.error("Autoplay blocked:", e));
+        audioPlayer.play().catch((e) => {
+          document.getElementById("icon-pause").classList.add("hidden");
+          document.getElementById("icon-play").classList.remove("hidden");
+        });
       }
 
       function handleStopTrack() {
@@ -367,7 +371,10 @@
         playerThumbContainer.style.animationPlayState = "paused";
 
         audioPlayer.pause();
-        audioPlayer.src = "";
+        audioPlayer.removeAttribute("src");
+        audioPlayer.load();
+        clearInterval(ytProgressInterval);
+        document.getElementById("player-progress").style.width = "0%";
       }
 
       function handleQueueUpdate(queue) {
@@ -652,8 +659,7 @@
             osc.start(startTime + i * 0.1);
             osc.stop(startTime + i * 0.1 + 0.6);
           });
-        } catch (e) {
-        }
+        } catch (e) {}
       }
 
       function updateWSStatus(status) {
@@ -963,7 +969,7 @@
             dummy.style.order = 1;
             listEl.appendChild(dummy);
           }
-          
+
           // Tambahkan Dummy Element di Bawah
           for (let i = 0; i < VISIBLE_HALF; i++) {
             const dummy = createDummyElement();
@@ -990,7 +996,7 @@
 
           // Padding atas saat game over
           const realAbove = dividerIndex - startIndex;
-          for (let i = 0; i < (VISIBLE_HALF - realAbove); i++) {
+          for (let i = 0; i < VISIBLE_HALF - realAbove; i++) {
             const dummy = createDummyElement();
             dummy.style.order = 1;
             listEl.appendChild(dummy);
@@ -1019,7 +1025,7 @@
 
           // Padding atas dengan dummy
           const realAbove = dividerIndex - startIndex;
-          for (let i = 0; i < (VISIBLE_HALF - realAbove); i++) {
+          for (let i = 0; i < VISIBLE_HALF - realAbove; i++) {
             const dummy = createDummyElement();
             dummy.style.order = 1;
             listEl.appendChild(dummy);
@@ -1041,7 +1047,7 @@
 
           // Padding bawah dengan dummy
           const realBelow = endIndex - dividerIndex;
-          for (let i = 0; i < (VISIBLE_HALF - realBelow); i++) {
+          for (let i = 0; i < VISIBLE_HALF - realBelow; i++) {
             const dummy = createDummyElement();
             dummy.style.order = 3;
             listEl.appendChild(dummy);
