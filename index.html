@@ -677,7 +677,7 @@
         if (!wsHost || wsHost === "") wsHost = "localhost";
 
         const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        const wsUrl = `ws://localhost:3000`;
+        const wsUrl = `https://wordwich-tiktok.onrender.com`;
         const ws = new WebSocket(wsUrl);
         globalWs = ws;
 
