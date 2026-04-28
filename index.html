@@ -243,6 +243,11 @@
     </div>
 
     <script>
+      // ====== BACKEND CONFIG ======
+      // Ganti ke domain backend Render kamu (tanpa trailing slash).
+      const BACKEND_HTTP = "https://wordwich-tiktok.onrender.com";
+      const BACKEND_WS = BACKEND_HTTP.replace(/^http/, "ws"); // -> wss://...
+
       // Default Avatar
       const userAvatarSVG = `
             <svg viewBox="0 0 100 100" class="w-full h-full bg-[#2563eb]">
@@ -357,7 +362,9 @@
         audioPlayer.pause();
         audioPlayer.removeAttribute("src");
         audioPlayer.load();
-        audioPlayer.src = track.streamUrl || `/stream/${track.id}`;
+        const rawStream = track.streamUrl || `/stream/${track.id}`;
+        // Kalau path relatif ("/stream/...") tambahkan domain backend.
+        audioPlayer.src = /^https?:\/\//i.test(rawStream) ? rawStream : BACKEND_HTTP + rawStream;
         audioPlayer.load();
         audioPlayer.play().catch((e) => {
           document.getElementById("icon-pause").classList.add("hidden");
@@ -607,10 +614,10 @@
             tiltAngle: 0
           });
         }
-        if (!confettiAnimationId) renderConfetti();
+        if (!confettiAnimationId) Confetti();
       }
 
-      function renderConfetti() {
+      function Confetti() {
         ctxConfetti.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
         let activeParticles = 0;
         confettiParticles.forEach((p) => {
@@ -631,7 +638,7 @@
           }
         });
         if (activeParticles > 0) {
-          confettiAnimationId = requestAnimationFrame(renderConfetti);
+          confettiAnimationId = requestAnimationFrame(Confetti);
         } else {
           cancelAnimationFrame(confettiAnimationId);
           confettiAnimationId = null;
@@ -673,12 +680,7 @@
       function setupWebSocket() {
         updateWSStatus("connecting");
 
-        let wsHost = window.location.hostname;
-        if (!wsHost || wsHost === "") wsHost = "localhost";
-
-        const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        const wsUrl = `https://wordwich-tiktok.onrender.com`;
-        const ws = new WebSocket(wsUrl);
+        const ws = new WebSocket(BACKEND_WS);
         globalWs = ws;
 
         ws.onopen = function () {
